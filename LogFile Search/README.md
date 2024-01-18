@@ -3,6 +3,7 @@ This script allows you to search a directory of log files and files in general f
  an issue and had to look through endless log files for what you wanted, this will help speed up that time.
 
  > Currently works on the following file formats: .log,.txt,.csv,.xlsx and .docx
+> > Requires Docx, openpyxl and requests modules to be installed.
 
 <br />
 <br />
