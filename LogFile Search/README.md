@@ -45,6 +45,10 @@ c:\temp\logs\nsc.log
 ![alt text](https://github.com/rrice2004/Python-/blob/main/LogFile%20Search/images/LogSearch_2.png)
 
 <br />
+
+![alt text](https://github.com/rrice2004/Python-/blob/main/LogFile%20Search/images/LogSearch_3.png)
+
+<br />
 <br />
 <br />
 
