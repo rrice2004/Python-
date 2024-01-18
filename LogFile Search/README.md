@@ -47,6 +47,27 @@ c:\temp\logs\nsc.log
 
 <br />
 
+```sh
+Enter the path of the folder or directory to search (wrap in double quotes if it contains spaces): c:\temp\
+Enter one or more keywords to search for (separated by commas): payload,10.0.0.1,web-engine,workflow
+Found 2 file(s) containing the keyword 'payload':
+c:\temp\logs\collector.log
+c:\temp\logs\ingress.log
+Found 5 file(s) containing the keyword '10.0.0.1':
+c:\temp\Book1.csv
+c:\temp\logs\Book2.csv
+c:\temp\logs\nsc.log
+c:\temp\logs\New folder\Book3.csv
+c:\temp\logs\New folder\Book3.csv
+Found 3 file(s) containing the keyword 'web-engine':
+c:\temp\logs\auth.log
+c:\temp\logs\nsc.log
+c:\temp\logs\nse.log
+Found 3 file(s) containing the keyword 'workflow':
+c:\temp\logs\eso.log
+c:\temp\logs\nsc.log
+c:\temp\logs\nse.log
+```
 ![alt text](https://github.com/rrice2004/Python-/blob/main/LogFile%20Search/images/LogSearch_3.png)
 
 <br />
