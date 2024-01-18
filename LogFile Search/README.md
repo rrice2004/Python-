@@ -58,6 +58,13 @@ c:\temp\logs\nsc.log
     * Work in progress
 
 <br />
+
+## Upcoming Changes
+* Create a stand alone executable so python doesn't have to be installed.
+* Fix issues with deep search directories.
+* Add for file formats for searching.
+   
+<br />
 <br />
 <br />
 
