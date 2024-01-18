@@ -83,7 +83,7 @@ c:\temp\logs\nse.log
 ## Upcoming Changes
 * Create a stand alone executable so python doesn't have to be installed.
 * Fix issues with deep search directories.
-* Add for file formats for searching.
+* Add more file formats for searching.
    
 <br />
 <br />
