@@ -1,9 +1,8 @@
 # Python Logfile Search
-This script allows you to search a directory of log files and files in general for keyword(s). If you've ever had to troubleshoot
- an issue and had to look through endless log files for what you wanted, this will help speed up that time.
+A log file search script to speed up troubleshooting and threat hunting. With the ability to search for individual or multiple keywords at a time through a directory of log files. 
 
  > Currently works on the following file formats: .log,.txt,.csv,.xlsx and .docx
-> > Requires Docx, openpyxl, fuzzywuzzy and requests modules to be installed.
+ >> Requires Docx, openpyxl, fuzzywuzzy and requests modules to be installed.
 
 <br />
 <br />
