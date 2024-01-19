@@ -107,8 +107,6 @@ c:\temp\logs\nse.log
 <br />
 <br />
 
-## Known Issues
 
-1. Anything more than three directories deep, multiple results will return for the same keyword.
 
 
