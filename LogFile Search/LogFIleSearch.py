@@ -1,4 +1,6 @@
 # Requires Docx, openpyxl and requests modules to be installed.
+# A log file search to speed up troubleshooting and threat hunting. With the ability to
+# search for individual or multiple keywords at a time.
 
 import os
 import openpyxl
