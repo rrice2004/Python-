@@ -10,8 +10,8 @@ This script allows you to search a directory of log files and files in general f
 
 ## Usage example
 ```sh
-python LogSearch2.py -h
-usage: LogSearch2.py [-h] folder_path keywords
+python LogSearch.py -h
+usage: LogSearch.py [-h] folder_path keywords
 
 Search for keyword(s) in .txt, .log, .csv, .xlsx, and .docx files.
 
