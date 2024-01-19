@@ -10,9 +10,9 @@ This script allows you to search a directory of log files and files in general f
 
 ## Usage example
 
-Say you have a directory of 40-50 log files and you qiuckly need to find which log files contain a keyword or a set or keywords,
-run this script to find out which ones you need to look at.  
+Single keyword: LogSearch.py c:\temp\logs payload
 <br />
+Multiple keywords: LogSearch.py c:\temp\logs payload,10.0.0.1,agent,overboard
 <br />
 Example:
 Say you needed to find which log files containt he keyword "payload." Provide the script the directory of your logs and the keyword
@@ -75,6 +75,9 @@ c:\temp\logs\nse.log
 <br />
 
 ## Release History
+* 0.0.2
+    * Added ArgeParse function
+    * Validated if keyword is not found, it's listed in the output.
 * 0.0.1
     * Work in progress
 
