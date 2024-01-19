@@ -1,7 +1,10 @@
+# Requires Docx, openpyxl and requests modules to be installed.
+
 import os
 import openpyxl
 import re
 from docx import Document
+import argparse
 
 # Function to define search criteria. Currently works on .log,.txt,.csv,.xlsx and .docx
 def search_files(folder_path, keywords):
@@ -54,17 +57,25 @@ def search_files(folder_path, keywords):
     return files_found
 
 if __name__ == "__main__":
-    # Take user input for a folder or directory to begin search along with what key word(s) to search for.
-    folder_path = input("Enter the path of the folder or directory to search (wrap in double quotes if it contains spaces): ")
+    # Create an ArgumentParser
+    parser = argparse.ArgumentParser(description="Search for keyword(s) in .txt, .log, .csv, .xlsx, and .docx files.")
 
 
-    keywords_input = input("Enter one or more keywords to search for (separated by commas): ")
-    keywords = [keyword.strip() for keyword in keywords_input.split(',')]
+    # Add command-line arguments
+    parser.add_argument("folder_path", help="Path of the folder or directory to search (wrap in double quotes if directory name contains spaces)")
+    parser.add_argument("keywords", help="Keywords can be single word or number, seperated by a comma. Example: payload or 10.0.0.1 or video's.")
 
-    # Begin searching provided directory or folder, locating all .txt, .log, .csv, .xlsx, and .docx files containing user provided keyword(s)
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Extract values from parsed arguments
+    folder_path = args.folder_path
+    keywords = [keyword.strip() for keyword in args.keywords.split(',')]
+
+    # Call the search_files function with the provided folder path and keywords
     files_found = search_files(folder_path, keywords)
 
-    # Provide an output of the file names where user provided keyword(s) were located
+    # Display the results to the user
     for keyword, keyword_files in files_found.items():
         if len(keyword_files) > 0:
             print(f"\033[1;33mFound {len(keyword_files)} file(s) containing the keyword '{keyword}':\033[0m")
@@ -72,4 +83,3 @@ if __name__ == "__main__":
                 print(f"\033[1;33m{file_path}\033[0m")
         else:
             print(f"\033[1;31mNo files containing the keyword '{keyword}' were found.\033[0m")
-
