@@ -9,10 +9,13 @@ import argparse
 from fuzzywuzzy import fuzz
 
 # Function to define search criteria. Currently works on .log, .txt, .csv, .xlsx, and .docx
+
+# Fuzzing portion
 def search_files(folder_path, search_terms):
     files_found = {term: set() for term in search_terms}
     threshold = 30  # Lowering the threshold to 30 for partial matching
 
+#directory portion
     for root, dirs, files in os.walk(folder_path):
         for dir_name in dirs[:]:
             dir_path = os.path.join(root, dir_name)
@@ -23,7 +26,8 @@ def search_files(folder_path, search_terms):
 
         for file_name in files:
             file_path = os.path.join(root, file_name)
-
+            
+#text, csv and log file
             if file_name.endswith(('.txt', '.log', '.csv')):
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                     for line in file:
@@ -31,7 +35,7 @@ def search_files(folder_path, search_terms):
                             if fuzz.partial_ratio(term.lower(), line.lower()) >= threshold:
                                 files_found[term].add(file_path)
                                 break  # stop searching this file once a match is found
-
+#excel portion
             elif file_name.endswith('.xlsx'):
                 try:
                     workbook = openpyxl.load_workbook(file_path, read_only=True)
@@ -48,6 +52,7 @@ def search_files(folder_path, search_terms):
                 except openpyxl.utils.exceptions.InvalidFileException:
                     pass  # Ignore invalid XLSX files
 
+#word doc portion
             elif file_name.endswith('.docx'):
                 try:
                     document = Document(file_path)
@@ -62,7 +67,7 @@ def search_files(folder_path, search_terms):
     return files_found
 
 if __name__ == "__main__":
-    # Create an ArgumentParser
+    # The ArgumentParser
     parser = argparse.ArgumentParser(description="Search for keyword(s) in .txt, .log, .csv, .xlsx, and .docx files.")
 
     # Add command-line arguments
@@ -79,7 +84,7 @@ if __name__ == "__main__":
     # Call the search_files function with the provided folder path and keywords
     files_found = search_files(folder_path, keywords)
 
-    # Display the results to the user
+    # Display the search results
     for term, term_files in files_found.items():
         unique_files = set(term_files)
         if len(unique_files) > 0:
