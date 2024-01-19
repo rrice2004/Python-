@@ -3,7 +3,7 @@ This script allows you to search a directory of log files and files in general f
  an issue and had to look through endless log files for what you wanted, this will help speed up that time.
 
  > Currently works on the following file formats: .log,.txt,.csv,.xlsx and .docx
-> > Requires Docx, openpyxl and requests modules to be installed.
+> > Requires Docx, openpyxl, fuzzywuzzy and requests modules to be installed.
 
 <br />
 <br />
@@ -87,6 +87,9 @@ c:\temp\logs\nse.log
 <br />
 
 ## Release History
+* 0.0.3
+    * Added fuzzywuzzy function to help with potential partial matches.
+    * Fixed output to where in some instances it was outputting the same file for each instance of a keyword to just listing the single file, regardless of how many times the keyword was found.
 * 0.0.2
     * Added ArgeParse function
     * Validated if keyword is not found, it's listed in the output.
