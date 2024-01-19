@@ -16,7 +16,7 @@ Search for keyword(s) in .txt, .log, .csv, .xlsx, and .docx files.
 
 positional arguments:
   folder_path  Path of the folder or directory to search (wrap in double quotes if directory name contains spaces)
-  keywords     Keywords can be single word or number, seperated by a comma. Example: payload or 10.0.0.1 or video's.
+  keywords     Keywords can be single word or number, seperated by a comma. Example: payload or last_ or video's.
 
 options:
   -h, --help   show this help message and exit
@@ -25,7 +25,12 @@ options:
 ```  
 Single keyword: python LogSearch.py c:\temp\logs payload
 
-Multiple keywords:  python LogSearch.py c:\temp\logs payload,10.0.0.1,agent,overboard
+Multiple keywords:  python LogSearch.py c:\temp\logs payload,agent,overboard
+
+IP Search: ppython LogSearch.py c:\temp\logs IP-10.0.0.1
+
+MAC Search: python LogSearch.py c:\temp\logs MAC-F0-77-C3-52-C3-B7
+*MAC address can be entered in any of the following formats: F0-77-C3-52-C3-B7, F0:77:C3:52:C3:B7, F077C352C3B7
 
  ```
 
