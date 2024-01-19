@@ -9,14 +9,26 @@ This script allows you to search a directory of log files and files in general f
 <br />
 
 ## Usage example
+```sh
+python LogSearch2.py -h
+usage: LogSearch2.py [-h] folder_path keywords
 
-Single keyword: LogSearch.py c:\temp\logs payload
-<br />
-Multiple keywords: LogSearch.py c:\temp\logs payload,10.0.0.1,agent,overboard
-<br />
-Example:
-Say you needed to find which log files containt he keyword "payload." Provide the script the directory of your logs and the keyword
-and let it search for you.  
+Search for keyword(s) in .txt, .log, .csv, .xlsx, and .docx files.
+
+positional arguments:
+  folder_path  Path of the folder or directory to search (wrap in double quotes if directory name contains spaces)
+  keywords     Keywords can be single word or number, seperated by a comma. Example: payload or 10.0.0.1 or video's.
+
+options:
+  -h, --help   show this help message and exit
+```
+
+```  
+Single keyword: python LogSearch.py c:\temp\logs payload
+
+Multiple keywords:  python LogSearch.py c:\temp\logs payload,10.0.0.1,agent,overboard
+
+ ```
 
 # Single Keyword Search
 ```sh
