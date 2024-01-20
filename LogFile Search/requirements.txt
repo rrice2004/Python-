@@ -1,0 +1,7 @@
+argparse==1.4.0
+openpyxl==3.0.10
+python-docx==0.8.11
+configparser==5.0.2
+ipaddress==1.0.23
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.12.2
