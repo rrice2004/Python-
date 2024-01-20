@@ -1,41 +1,25 @@
-# Requires Docx, openpyxl, fuzzywuzzy and requests modules to be installed.
-# A log file search to speed up troubleshooting and threat hunting. With the ability to
-# search for individual, multiple keywords at a time as well as IP and MAC addresses.
-
+import argparse
 import os
 import openpyxl
 from docx import Document
-import argparse
-from fuzzywuzzy import fuzz
+from configparser import ConfigParser
 import ipaddress
+from fuzzywuzzy import fuzz 
 
-# Function to define search criteria. Currently works on .log, .txt, .csv, .xlsx, and .docx
-def search_files(folder_path, search_terms):
+def search_files(directory, extensions, search_terms):
     files_found = {term: set() for term in search_terms}
-    threshold = 30  # Lowering the threshold to 30 for partial matching
+    threshold = 75  # Lowering the threshold to 30 for partial matching
 
-# Directory to search
-    for root, dirs, files in os.walk(folder_path):
-        for dir_name in dirs[:]:
-            dir_path = os.path.join(root, dir_name)
-            for sub_dir, _, _ in os.walk(dir_path):
-                dirs.append(sub_dir)
-            if os.path.normcase(dir_path) != os.path.normcase(folder_path):
-                dirs.remove(dir_name)
-
+    for root, dirs, files in os.walk(directory):
         for file_name in files:
             file_path = os.path.join(root, file_name)
-# text,log and csv files
-            if file_name.endswith(('.txt', '.log', '.csv')):
+
+            if file_name.endswith(tuple(extensions)):
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                     for line in file:
                         for term in search_terms:
-                            if term.startswith('IP-') or term.startswith('MAC-'):
-                                handle_ip_mac_search(term, line, file_path, files_found)
-                            elif fuzz.partial_ratio(term.lower(), line.lower()) >= threshold:
-                                files_found[term].add(file_path)
-                                break  # stop searching this file once a match is found
-# excel files
+                            handle_search(term, line, file_path, files_found, threshold)
+
             elif file_name.endswith('.xlsx'):
                 try:
                     workbook = openpyxl.load_workbook(file_path, read_only=True)
@@ -44,31 +28,39 @@ def search_files(folder_path, search_terms):
                             for cell in row:
                                 cell_value = cell.value
                                 for term in search_terms:
-                                    if term.startswith('IP-') or term.startswith('MAC-'):
-                                        handle_ip_mac_search(term, str(cell_value), file_path, files_found)
-                                    elif cell_value is not None and fuzz.partial_ratio(term.lower(), str(cell_value).lower()) >= threshold:
-                                        files_found[term].add(file_path)
-                                        break  # stop searching this file once a match is found
-                                if file_path in files_found[term]:
-                                    break  # stop searching this sheet once a match is found
+                                    handle_search(term, str(cell_value), file_path, files_found, threshold)
                 except openpyxl.utils.exceptions.InvalidFileException:
-                    pass  # Ignore invalid XLSX files
-# word files
+                    pass
+
             elif file_name.endswith('.docx'):
                 try:
                     document = Document(file_path)
                     for paragraph in document.paragraphs:
                         for term in search_terms:
-                            if term.startswith('IP-') or term.startswith('MAC-'):
-                                handle_ip_mac_search(term, paragraph.text, file_path, files_found)
-                            elif fuzz.partial_ratio(term.lower(), paragraph.text.lower()) >= threshold:
-                                files_found[term].add(file_path)
-                                break  # stop searching this file once a match is found
+                            handle_search(term, paragraph.text, file_path, files_found)
                 except Exception as e:
-                    pass  # Ignore errors when processing Word documents
+                    pass
+
+            elif file_name.endswith('.ini'):
+                try:
+                    config = ConfigParser()
+                    config.read(file_path)
+                    for section in config.sections():
+                        for option, value in config.items(section):
+                            for term in search_terms:
+                                handle_search(term, option, file_path, files_found, threshold)
+                                handle_search(term, value, file_path, files_found, threshold)
+                except Exception as e:
+                    pass
 
     return files_found
-# ip and mac search
+
+def handle_search(term, content, file_path, files_found, threshold):
+    if term.startswith('IP-') or term.startswith('MAC-'):
+        handle_ip_mac_search(term, content, file_path, files_found)
+    elif fuzz.partial_ratio(term.lower(), content.lower()) >= threshold:
+        files_found[term].add(file_path)
+
 def handle_ip_mac_search(term, content, file_path, files_found):
     if term.startswith('IP-'):
         ip_term = term[3:]
@@ -81,9 +73,9 @@ def handle_ip_mac_search(term, content, file_path, files_found):
 
 def is_ip_match(term, content):
     try:
-        ip_address = ipaddress.ip_address(content.strip())
-        if isinstance(ip_address, ipaddress.IPv4Address) and isinstance(ipaddress.ip_address(term.strip()), ipaddress.IPv4Address):
-            return str(ip_address).startswith(str(term.strip()))
+        ip_address_obj = ipaddress.ip_address(content.strip())
+        if isinstance(ip_address_obj, ipaddress.IPv4Address) and isinstance(ipaddress.ip_address(term.strip()), ipaddress.IPv4Address):
+            return str(ip_address_obj).startswith(str(term.strip()))
     except ValueError:
         return False
 
@@ -92,30 +84,33 @@ def is_mac_match(term, content):
     sanitized_term = ''.join(c.lower() for c in term if c.isalnum())
     return sanitized_content.startswith(sanitized_term)
 
-if __name__ == "__main__":
-    # Create an ArgumentParser
-    parser = argparse.ArgumentParser(description="Search for keyword(s), IP addresses, and MAC addresses in .txt, .log, .csv, .xlsx, and .docx files.")
+def main():
+    parser = argparse.ArgumentParser(description="Search for keyword(s), IP addresses, MAC addresses, and sections/values in .txt, .log, .csv, .xlsx, .docx, and .ini files.")
+    parser.add_argument("-D", "--directory", dest="directory", help="Directory to search for files. Enclose in double quotes if it contains spaces.")
+    parser.add_argument("-K", "--keywords", dest="keywords", help="Keywords separated by commas.")
+    parser.add_argument("-I", "--ip", dest="ip_addresses", help="IP addresses separated by commas. Enclose in double quotes.")
+    parser.add_argument("-M", "--mac", dest="mac_addresses", help="MAC addresses separated by commas. Enclose in double quotes.")
 
-    # Add command-line arguments
-    parser.add_argument("folder_path", help="Path of the folder or directory to search (wrap in double quotes if directory name contains spaces)")
-    parser.add_argument("keywords", help="Keywords can be single word or number, separated by a comma. Example: payload or IP-10.0.0.1 or MAC-AABBCC112233.")
-
-    # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Extract values from parsed arguments
-    folder_path = args.folder_path
-    keywords = [keyword.strip() for keyword in args.keywords.split(',')]
+    directory = os.path.abspath(args.directory) if args.directory else None
+    extensions = ['log', 'txt', 'xlsx', 'csv', 'docx', 'ini']
+    keywords = [keyword.strip() for keyword in args.keywords.split(',')] if args.keywords else []
+    ip_addresses = [ip.strip() for ip in args.ip_addresses.split(',')] if args.ip_addresses else []
+    mac_addresses = [mac.strip() for mac in args.mac_addresses.split(',')] if args.mac_addresses else []
 
-    # Call the search_files function with the provided folder path and keywords
-    files_found = search_files(folder_path, keywords)
+    search_terms = keywords + [f"IP-{ip}" for ip in ip_addresses] + [f"MAC-{mac}" for mac in mac_addresses]
 
-    # Display the results to the user
+    files_found = search_files(directory, extensions, search_terms)
+
     for term, term_files in files_found.items():
         unique_files = set(term_files)
         if len(unique_files) > 0:
-            print(f"\033[1;33mFound {len(unique_files)} file(s) containing the keyword '{term}':\033[0m")
+            print(f"Found {len(unique_files)} file(s) containing the keyword '{term}':")
             for file_path in unique_files:
-                print(f"\033[1;33m{file_path}\033[0m")
+                print(file_path)
         else:
-            print(f"\033[1;31mNo files containing the keyword '{term}' were found.\033[0m")
+            print(f"No files containing the keyword '{term}' were found.")
+
+if __name__ == "__main__":
+    main()
