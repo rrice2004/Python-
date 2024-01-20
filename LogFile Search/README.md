@@ -1,96 +1,141 @@
 # Python Logfile Search
-A log file search script to speed up troubleshooting and threat hunting. With the ability to search for individual or multiple keywords at a time through a directory of log files. 
+A log file search script to speed up troubleshooting and threat hunting. With the ability to search for individual or multiple keywords, IP addresses and MAC addresses. Help speed up your workflow and save time.
 
- > Currently works on the following file formats: .log,.txt,.csv,.xlsx and .docx
- >> Requires Docx, openpyxl, fuzzywuzzy and requests modules to be installed.
+ > Currently works on the following file formats: .ini,.log,.txt,.csv,.xlsx and .docx
+ >> Requires python-docx, openpyxl, fuzzywuzzy and python-Levenshtein modules to be installed.
 
 <br />
 <br />
 
-## Usage example
-```sh
-python LogSearch.py -h
-usage: LogSearch.py [-h] folder_path keywords
+## Installation
 
-Search for keyword(s) in .txt, .log, .csv, .xlsx, and .docx files.
-
-positional arguments:
-  folder_path  Path of the folder or directory to search (wrap in double quotes if directory name contains spaces)
-  keywords     Keywords can be single word or number, seperated by a comma. Example: payload or last_ or video's.
-
-options:
-  -h, --help   show this help message and exit
+```
+This tool was built with Python 3.10.11
+See the requirements.txt file for modules and module versions.
 ```
 
-```  
-Single keyword: python LogSearch.py c:\temp\logs payload
+## Usage example
 
-Multiple keywords:  python LogSearch.py c:\temp\logs payload,agent,overboard
 
-IP Search: ppython LogSearch.py c:\temp\logs IP-10.0.0.1
+```sh
+python LogFileSearch.py -h
+usage: LogFileSearch.py [-h] [-D DIRECTORY] [-K KEYWORDS] [-I IP_ADDRESSES] [-M MAC_ADDRESSES]
 
-MAC Search: python LogSearch.py c:\temp\logs MAC-F0-77-C3-52-C3-B7
-*MAC address can be entered in any of the following formats: F0-77-C3-52-C3-B7, F0:77:C3:52:C3:B7, F077C352C3B7
+Search for keyword(s), IP addresses, MAC addresses, and sections/values in .txt, .log, .csv, .xlsx, .docx, and .ini
+files.
+
+options:
+  -h, --help            show this help message and exit
+  -D DIRECTORY, --directory DIRECTORY
+                        Directory to search for files. Enclose in double quotes if it contains spaces.
+  -K KEYWORDS, --keywords KEYWORDS
+                        Keywords separated by commas.
+  -I IP_ADDRESSES, --ip IP_ADDRESSES
+                        IP addresses separated by commas. Enclose in double quotes.
+  -M MAC_ADDRESSES, --mac MAC_ADDRESSES
+                        MAC addresses separated by commas. Enclose in double quotes.
+```
+
+# Single Keyword Search
+```sh  
+python LogFileSearch.py -D c:\temp -K payload
+
+Found 1 file(s) containing the keyword 'payload':
+c:\temp\New Text Document.txt
 
  ```
 
-# Single Keyword Search
-```sh
-Enter the path of the folder or directory to search (wrap in double quotes if it contains spaces): C:\temp\
-Enter one or more keywords to search for (separated by commas): payload
-
-Found 2 file(s) containing the keyword 'payload':
-C:\temp\logs\collector.log
-C:\temp\logs\ingress.log
-```
-![alt text](https://github.com/rrice2004/Python-/blob/main/LogFile%20Search/images/LogSearch_1.png)
-<br />
-<br />
-
 # Multiple Keyword Search
 ```sh
-Enter the path of the folder or directory to search (wrap in double quotes if it contains spaces): C:\temp\
-Enter one or more keywords to search for (separated by commas): payload,10.0.0.1
+python LogFileSearch.py -D c:\temp -K payload,.net
 
-Found 2 file(s) containing the keyword 'payload':
-c:\temp\logs\collector.log
-c:\temp\logs\ingress.log
-Found 2 file(s) containing the keyword '10.0.0.1':
-c:\temp\Book1.csv
-c:\temp\logs\nsc.log
+Found 1 file(s) containing the keyword 'payload':
+c:\temp\New Text Document.txt
+Found 1 file(s) containing the keyword '.net':
+c:\temp\UninstalItems.log
 ```
-![alt text](https://github.com/rrice2004/Python-/blob/main/LogFile%20Search/images/LogSearch_2.png)
+> Keywords that contain a space must be wrapped in double quotes. EX: "file server"
 
 <br />
+<br />
 
+# Single IP Search
 ```sh
-Enter the path of the folder or directory to search (wrap in double quotes if it contains spaces): c:\temp\
-Enter one or more keywords to search for (separated by commas): payload,10.0.0.1,web-engine,workflow
-Found 2 file(s) containing the keyword 'payload':
-c:\temp\logs\collector.log
-c:\temp\logs\ingress.log
-Found 5 file(s) containing the keyword '10.0.0.1':
-c:\temp\Book1.csv
-c:\temp\logs\Book2.csv
-c:\temp\logs\nsc.log
-c:\temp\logs\New folder\Book3.csv
-c:\temp\logs\New folder\Book3.csv
-Found 3 file(s) containing the keyword 'web-engine':
-c:\temp\logs\auth.log
-c:\temp\logs\nsc.log
-c:\temp\logs\nse.log
-Found 3 file(s) containing the keyword 'workflow':
-c:\temp\logs\eso.log
-c:\temp\logs\nsc.log
-c:\temp\logs\nse.log
+python LogFileSearch.py -D c:\temp -I "10.0.0.1"
+
+Found 1 file(s) containing the keyword 'IP-10.0.0.1':
+c:\temp\New Text Document.txt
 ```
-![alt text](https://github.com/rrice2004/Python-/blob/main/LogFile%20Search/images/LogSearch_3.png)
+<br />
+<br />
+
+# Multiple IP Search
+```sh
+python LogFileSearch.py -D c:\temp -I "10.0.0.1","192.168.1.1"
+
+Found 1 file(s) containing the keyword 'IP-10.0.0.1':
+c:\temp\New Text Document.txt
+Found 2 file(s) containing the keyword 'IP-192.168.1.1':
+c:\temp\UninstalItems.log
+c:\temp\New Text Document.txt
+```
+> IP addresses must be wrapped in double quotes.
+<br />
+<br />
+
+# Single Mac Address Search
+```sh
+python LogFileSearch.py -D c:\temp -M "AA:BB:CC:11:22:33"
+
+Found 2 file(s) containing the keyword 'MAC-AA:BB:CC:11:22:33':
+c:\temp\rips\export.ini
+c:\temp\rips\export.log
+```
+<br />
+<br />
+
+# Multiple Mac Address Search
+```sh
+python LogFileSearch.py -D c:\temp -M "AA:BB:CC:11:22:33","0A-00-27-00-00-0E"
+
+Found 2 file(s) containing the keyword 'MAC-AA:BB:CC:11:22:33':
+c:\temp\rips\export.ini
+c:\temp\rips\export.log
+Found 1 file(s) containing the keyword 'MAC-0A-00-27-00-00-0E':
+c:\temp\rips\export.ini
+```
+> Mac addresses can be etnered in any of the following formats: AA:BB:CC:11:22:33, AABBCC112233, AA-BB-CC-11-22-33. They must be wrapped in doubled quotes.
+
+<br />
+<br />
+
+# Combination Search
+```sh
+python LogFileSearch.py -D c:\temp -M "AA:BB:CC:11:22:33" -K adobe,"file server" -I "192.168.1.1"
+
+Found 1 file(s) containing the keyword 'adobe':
+c:\temp\UninstalItems.log
+Found 1 file(s) containing the keyword 'file server':
+c:\temp\New Text Document.txt
+Found 3 file(s) containing the keyword 'IP-192.168.1.1':
+c:\temp\rips\export.ini
+c:\temp\UninstalItems.log
+c:\temp\New Text Document.txt
+Found 2 file(s) containing the keyword 'MAC-AA:BB:CC:11:22:33':
+c:\temp\rips\export.ini
+c:\temp\rips\export.log
+```
+
 
 <br />
 <br />
 <br />
 
 ## Release History
+* 0.0.4
+    * Added .ini file search function.
+    * Rewrote the argparse so that it functions correctly with switches.
+    * Fixed the IP and MAC search function to take use input correctly.
 * 0.0.3
     * Added fuzzywuzzy function to help with potential partial matches.
     * Fixed output to where in some instances it was outputting the same file for each instance of a keyword to just listing the single file, regardless of how many times the keyword was found.
@@ -98,7 +143,7 @@ c:\temp\logs\nse.log
     * Added ArgeParse function
     * Validated if keyword is not found, it's listed in the output.
 * 0.0.1
-    * Work in progress
+    * Initial Release.
 
 <br />
 
@@ -111,7 +156,3 @@ c:\temp\logs\nse.log
 <br />
 <br />
 <br />
-
-
-
-
