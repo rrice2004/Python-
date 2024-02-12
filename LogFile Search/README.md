@@ -132,6 +132,8 @@ c:\temp\rips\export.log
 <br />
 
 ## Release History
+* 0.0.5
+    * Added .xml and .json file search function.
 * 0.0.4
     * Added .ini file search function.
     * Rewrote the argparse so that it functions correctly with switches.
