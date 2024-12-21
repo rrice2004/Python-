@@ -44,7 +44,7 @@ Once loaded, select a playlist from the dropdown and click View Songs. This will
 ## Release History
 
 * 0.0.1
-    * Work in progress
+    * Initial Release
 
 
 
