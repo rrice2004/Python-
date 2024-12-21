@@ -1,5 +1,5 @@
 # Plex Playlist Viewer
-> Script that launches a UI to view music playlist from your Plex server and allows export to txt file for sharing.
+> Script that launches a UI to view music playlist from your Plex server and allows export to txt file for sharing using plexapi and tkinter.
 
 
 Query your server to pull a list of all your music playlists. Export playlists to txt file for easy sharing. Stores server IP and Plex user token in encrypted files so you dont have to keep entering them.
