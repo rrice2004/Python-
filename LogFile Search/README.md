@@ -132,6 +132,8 @@ c:\temp\rips\export.log
 <br />
 
 ## Release History
+* 0.0.6
+    * Fixed issues with OS Walk and openpyxl.
 * 0.0.5
     * Added .xml and .json file search function.
 * 0.0.4
