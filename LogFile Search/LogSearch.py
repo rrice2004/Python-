@@ -1,28 +1,26 @@
 import argparse
 import os
-import openpyxl
 from docx import Document
 from configparser import ConfigParser
 import ipaddress
 from fuzzywuzzy import fuzz
 import json
 import xml.etree.ElementTree as ET
+import openpyxl
+from openpyxl.utils.exceptions import InvalidFileException
 
 def search_files(directory, extensions, search_terms):
+    # Initialize the files_found dictionary to store results
     files_found = {term: {"text": set(), "json": set(), "xml": set()} for term in search_terms}
     threshold = 75  # Lowering the threshold to 30 for partial matching
 
+    # Walk through the directory
     for root, dirs, files in os.walk(directory):
         for file_name in files:
             file_path = os.path.join(root, file_name)
 
-            if file_name.endswith(tuple(extensions)):
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-                    for line in file:
-                        for term in search_terms:
-                            handle_search(term, line, file_path, files_found, threshold)
-
-            elif file_name.endswith('.xlsx'):
+            # Skip Excel files here and handle them separately
+            if file_name.endswith('.xlsx'):
                 try:
                     workbook = openpyxl.load_workbook(file_path, read_only=True)
                     for sheet in workbook.worksheets:
@@ -32,8 +30,17 @@ def search_files(directory, extensions, search_terms):
                                 for term in search_terms:
                                     handle_search(term, str(cell_value), file_path, files_found, threshold)
                 except openpyxl.utils.exceptions.InvalidFileException:
-                    pass
+                    pass  # Skip invalid Excel files
+                continue  # Skip the file if it's an Excel file
 
+            # Process other file types like .txt, .log, etc.
+            if file_name.endswith(tuple(extensions)):
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+                    for line in file:
+                        for term in search_terms:
+                            handle_search(term, line, file_path, files_found, threshold)
+
+            # Handle .docx files
             elif file_name.endswith('.docx'):
                 try:
                     document = Document(file_path)
@@ -41,8 +48,9 @@ def search_files(directory, extensions, search_terms):
                         for term in search_terms:
                             handle_search(term, paragraph.text, file_path, files_found, threshold)
                 except Exception as e:
-                    pass
+                    pass  # Skip any errors related to .docx files
 
+            # Handle .ini files (ConfigParser)
             elif file_name.endswith('.ini'):
                 try:
                     config = ConfigParser()
@@ -53,8 +61,9 @@ def search_files(directory, extensions, search_terms):
                                 handle_search(term, option, file_path, files_found, threshold)
                                 handle_search(term, value, file_path, files_found, threshold)
                 except Exception as e:
-                    pass
+                    pass  # Skip any errors related to .ini files
 
+            # Handle .json files
             elif file_name.endswith('.json'):
                 try:
                     with open(file_path, 'r') as json_file:
@@ -63,8 +72,9 @@ def search_files(directory, extensions, search_terms):
                         for term in search_terms:
                             handle_search(term, json_content, file_path, files_found, threshold)
                 except Exception as e:
-                    pass
+                    pass  # Skip any errors related to .json files
 
+            # Handle .xml files
             elif file_name.endswith('.xml'):
                 try:
                     tree = ET.parse(file_path)
@@ -73,10 +83,11 @@ def search_files(directory, extensions, search_terms):
                     for term in search_terms:
                         handle_search(term, xml_content, file_path, files_found, threshold)
                 except Exception as e:
-                    pass
+                    pass  # Skip any errors related to .xml files
 
     return files_found
 
+# Helper function to search terms in content and store results
 def handle_search(term, content, file_path, files_found, threshold):
     if term.startswith('IP-') or term.startswith('MAC-'):
         handle_ip_mac_search(term, content, file_path, files_found)
@@ -88,6 +99,7 @@ def handle_search(term, content, file_path, files_found, threshold):
         else:
             files_found[term]["text"].add(file_path)
 
+# Handle searches for IP and MAC addresses
 def handle_ip_mac_search(term, content, file_path, files_found):
     if term.startswith('IP-'):
         ip_term = term[3:]
@@ -98,6 +110,7 @@ def handle_ip_mac_search(term, content, file_path, files_found):
         if is_mac_match(mac_term, content):
             files_found[term]["text"].add(file_path)
 
+# Check if the IP matches
 def is_ip_match(term, content):
     try:
         ip_address_obj = ipaddress.ip_address(content.strip())
@@ -106,11 +119,13 @@ def is_ip_match(term, content):
     except ValueError:
         return False
 
+# Check if the MAC address matches
 def is_mac_match(term, content):
     sanitized_content = ''.join(c.lower() for c in content if c.isalnum())
     sanitized_term = ''.join(c.lower() for c in term if c.isalnum())
     return sanitized_content.startswith(sanitized_term)
 
+# Main function to parse arguments and execute search
 def main():
     parser = argparse.ArgumentParser(description="Search for keyword(s), IP addresses, MAC addresses, and sections/values in .txt, .log, .csv, .xlsx, .docx, .ini, .json, and .xml files.")
     parser.add_argument("-D", "--directory", dest="directory", help="Directory to search for files. Enclose in double quotes if it contains spaces.")
@@ -130,6 +145,7 @@ def main():
 
     files_found = search_files(directory, extensions, search_terms)
 
+    # Print results
     for term, file_types in files_found.items():
         unique_text_files = set(file_types["text"])
         unique_json_files = set(file_types["json"])
