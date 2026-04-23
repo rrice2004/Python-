@@ -198,9 +198,9 @@ python LogFileSearch.py \
 
 ## Upcoming Changes
 * Create a stand alone executable so python doesn't have to be installed.
-* Fix issues with deep search directories.
 * Add more file formats for searching.
-* Add better IP and MAC address searching.
+* Add zip/7zip search capabilities. 
+
    
 <br />
 <br />
