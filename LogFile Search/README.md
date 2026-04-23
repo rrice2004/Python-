@@ -133,8 +133,7 @@ python LogFileSearch.py \
   -D C:\temp \
   -K "adobe,file server" \
   -I 192.168.1.1,10.0.0.0/8 \
-  -M AA:BB:CC:11:22:33 \
-  --case IR-2026-0041
+  -M AA:BB:CC:11:22:33 
 
 [FOUND] adobe                 -> C:\temp\UninstallItems.log
 [FOUND] file server           -> C:\temp\New Text Document.txt
