@@ -132,6 +132,33 @@ c:\temp\rips\export.log
 <br />
 
 ## Release History
+* 0.1.0
+    * Complete rewrite, added the following fixes and upgrades:
+       * Quote safe argument sanitization for keywords, IPs, and MACs
+       * Explicit Windows vs Linux quoting guidance in --help output
+       * Support for CIDR notation in IP searches (e.g. 10.0.0.0/8, 192.168.1.0/24)
+       * Optional prefix matching for IP addresses (-P / --prefix)
+       * Optional prefix matching for MAC addresses (-P / --prefix)
+       * Separate prefix matching functions for IPs and MACs
+       * Explicit opt-in prefix mode (default behavior unchanged)
+       * Improved IP regex extraction from mixed content
+       * Validation and warning for invalid IP or CIDR input
+       * Colored terminal output (auto disabled with --quiet)
+       * --quiet flag for minimal / script friendly output
+       * --case flag for incident or case identifier tagging
+       * Improved argparse help formatting (RawTextHelpFormatter)
+       * Consistent processing across subdirectories
+       * Dedicated processing handlers for TXT, CSV, XLSX, DOCX, INI, JSON, XML
+       * Unified result structure by file type (text / json / xml)
+      *  Fuzzy keyword matching with adjustable threshold
+       * Explicit separation of strict matching vs prefix matching logic
+
+
+
+
+
+
+
 * 0.0.6
     * Fixed issues with OS Walk and openpyxl.
 * 0.0.5
