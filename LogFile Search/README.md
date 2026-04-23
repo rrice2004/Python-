@@ -122,7 +122,7 @@ python LogFileSearch.py -D C:\temp -P -M AA:BB:CC
 
 [FOUND] MAC-AA:BB:CC -> C:\temp\rips\export.ini
 ```
-> Mac addresses can be etnered in any of the following formats: AA:BB:CC:11:22:33, AABBCC112233, AA-BB-CC-11-22-33.
+> Mac addresses can be entered in any of the following formats: AA:BB:CC:11:22:33, AABBCC112233, AA-BB-CC-11-22-33
 
 <br />
 <br />
