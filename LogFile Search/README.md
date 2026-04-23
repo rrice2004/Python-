@@ -1,17 +1,27 @@
 # Python Logfile Search
-A log file search script to speed up troubleshooting and threat hunting. With the ability to search for individual or multiple keywords, IP addresses and MAC addresses. Help speed up your workflow and save time.
 
- > Currently works on the following file formats: .ini,.log,.txt,.csv,.xlsx and .docx
- >> Requires python-docx, openpyxl, fuzzywuzzy and python-Levenshtein modules to be installed.
+A command‑line log and artifact search utility designed to support SOC operations, digital forensics, and incident response (DFIR) workflows. The script enables analysts to quickly locate indicators of interest—such as keywords, IP addresses (including CIDR ranges), and MAC addresses—across large collections of logs and host‑based artifacts.
+Built for investigative use, the tool helps reduce manual review time during triage, threat hunting, and post‑incident analysis, allowing responders to identify relevant evidence faster and focus effort where it matters most.
 
+Supported File Formats
+The script currently supports searching across the following evidence and log formats commonly encountered during investigations:
+
+.ini
+.log
+.txt
+.csv
+.xlsx
+.docx
 <br />
 <br />
 
 ## Installation
 
 ```
-This tool was built with Python 3.10.11
-See the requirements.txt file for modules and module versions.
+Built and tested with Python 3.10.11
+
+See requirements.txt for required modules and pinned versions.
+
 ```
 
 ## Usage example
@@ -19,21 +29,26 @@ See the requirements.txt file for modules and module versions.
 
 ```sh
 python LogFileSearch.py -h
-usage: LogFileSearch.py [-h] [-D DIRECTORY] [-K KEYWORDS] [-I IP_ADDRESSES] [-M MAC_ADDRESSES]
+usage: LogFileSearch.py [-h] -D DIRECTORY [-K KEYWORDS] [-I IP_ADDRESSES]
+                        [-M MAC_ADDRESSES] [-P] [--case CASE_ID] [--quiet]
 
-Search for keyword(s), IP addresses, MAC addresses, and sections/values in .txt, .log, .csv, .xlsx, .docx, and .ini
-files.
+Multi‑File Search Utility (SOC / DFIR)
 
 options:
   -h, --help            show this help message and exit
-  -D DIRECTORY, --directory DIRECTORY
-                        Directory to search for files. Enclose in double quotes if it contains spaces.
-  -K KEYWORDS, --keywords KEYWORDS
-                        Keywords separated by commas.
-  -I IP_ADDRESSES, --ip IP_ADDRESSES
-                        IP addresses separated by commas. Enclose in double quotes.
-  -M MAC_ADDRESSES, --mac MAC_ADDRESSES
-                        MAC addresses separated by commas. Enclose in double quotes.
+  -D DIRECTORY          Directory to search. Quote only if the path contains spaces.
+  -K KEYWORDS           Comma‑separated keywords or phrases.
+  -I IP_ADDRESSES       Comma‑separated IP addresses or CIDR ranges.
+  -M MAC_ADDRESSES      Comma‑separated MAC addresses.
+  -P, --prefix          Enable prefix matching for IP and MAC searches.
+  --case CASE_ID        Optional case or incident identifier.
+  --quiet               Minimal output for scripting or automation.
+
+INPUT NOTES:
+  • Values are comma‑separated
+  • Do NOT quote individual values
+  • Quote the entire argument only when spaces are present (Windows & Linux)
+
 ```
 
 # Single Keyword Search
@@ -54,14 +69,15 @@ c:\temp\New Text Document.txt
 Found 1 file(s) containing the keyword '.net':
 c:\temp\UninstalItems.log
 ```
-> Keywords that contain a space must be wrapped in double quotes. EX: "file server"
+> Keywords containing spaces must be passed as a single quoted argument:
+> -K "file server,login failure"
 
 <br />
 <br />
 
 # Single IP Search
 ```sh
-python LogFileSearch.py -D c:\temp -I "10.0.0.1"
+python LogFileSearch.py -D C:\temp -I 10.0.0.1
 
 Found 1 file(s) containing the keyword 'IP-10.0.0.1':
 c:\temp\New Text Document.txt
@@ -69,17 +85,23 @@ c:\temp\New Text Document.txt
 <br />
 <br />
 
-# Multiple IP Search
+# CIDR IP Search
 ```sh
-python LogFileSearch.py -D c:\temp -I "10.0.0.1","192.168.1.1"
+python LogFileSearch.py -D C:\temp -I 192.168.1.0/24
 
-Found 1 file(s) containing the keyword 'IP-10.0.0.1':
-c:\temp\New Text Document.txt
-Found 2 file(s) containing the keyword 'IP-192.168.1.1':
-c:\temp\UninstalItems.log
-c:\temp\New Text Document.txt
+[FOUND] IP-192.168.1.0/24 -> C:\temp\UninstallItems.log
+[FOUND] IP-192.168.1.0/24 -> C:\temp\New Text Document.txt
+
 ```
-> IP addresses must be wrapped in double quotes.
+<br />
+<br />
+
+# Prefix IP Search (Opt‑In)
+```sh
+python LogFileSearch.py -D C:\temp -P -I 192.168.1.
+
+[FOUND] IP-192.168.1. -> C:\temp\New Text Document.txt
+```
 <br />
 <br />
 
@@ -94,36 +116,32 @@ c:\temp\rips\export.log
 <br />
 <br />
 
-# Multiple Mac Address Search
+# Prefix MAC Address Search (Opt‑In)
 ```sh
-python LogFileSearch.py -D c:\temp -M "AA:BB:CC:11:22:33","0A-00-27-00-00-0E"
+python LogFileSearch.py -D C:\temp -P -M AA:BB:CC
 
-Found 2 file(s) containing the keyword 'MAC-AA:BB:CC:11:22:33':
-c:\temp\rips\export.ini
-c:\temp\rips\export.log
-Found 1 file(s) containing the keyword 'MAC-0A-00-27-00-00-0E':
-c:\temp\rips\export.ini
+[FOUND] MAC-AA:BB:CC -> C:\temp\rips\export.ini
 ```
-> Mac addresses can be etnered in any of the following formats: AA:BB:CC:11:22:33, AABBCC112233, AA-BB-CC-11-22-33. They must be wrapped in doubled quotes.
+> Mac addresses can be etnered in any of the following formats: AA:BB:CC:11:22:33, AABBCC112233, AA-BB-CC-11-22-33.
 
 <br />
 <br />
 
-# Combination Search
+# Combined Search Example
 ```sh
-python LogFileSearch.py -D c:\temp -M "AA:BB:CC:11:22:33" -K adobe,"file server" -I "192.168.1.1"
+python LogFileSearch.py \
+  -D C:\temp \
+  -K "adobe,file server" \
+  -I 192.168.1.1,10.0.0.0/8 \
+  -M AA:BB:CC:11:22:33 \
+  --case IR-2026-0041
 
-Found 1 file(s) containing the keyword 'adobe':
-c:\temp\UninstalItems.log
-Found 1 file(s) containing the keyword 'file server':
-c:\temp\New Text Document.txt
-Found 3 file(s) containing the keyword 'IP-192.168.1.1':
-c:\temp\rips\export.ini
-c:\temp\UninstalItems.log
-c:\temp\New Text Document.txt
-Found 2 file(s) containing the keyword 'MAC-AA:BB:CC:11:22:33':
-c:\temp\rips\export.ini
-c:\temp\rips\export.log
+[FOUND] adobe                 -> C:\temp\UninstallItems.log
+[FOUND] file server           -> C:\temp\New Text Document.txt
+[FOUND] IP-192.168.1.1        -> C:\temp\New Text Document.txt
+[FOUND] IP-10.0.0.0/8         -> C:\temp\rips\export.ini
+[FOUND] MAC-AA:BB:CC:11:22:33 -> C:\temp\rips\export.log
+
 ```
 
 
