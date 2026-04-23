@@ -1,170 +1,254 @@
+#!/usr/bin/env python3
+
 import argparse
 import os
-from docx import Document
-from configparser import ConfigParser
-import ipaddress
-from fuzzywuzzy import fuzz
+import sys
+import re
 import json
+import ipaddress
 import xml.etree.ElementTree as ET
+from configparser import ConfigParser
+
+from docx import Document
+from fuzzywuzzy import fuzz
 import openpyxl
-from openpyxl.utils.exceptions import InvalidFileException
 
-def search_files(directory, extensions, search_terms):
-    # Initialize the files_found dictionary to store results
-    files_found = {term: {"text": set(), "json": set(), "xml": set()} for term in search_terms}
-    threshold = 75  # Lowering the threshold to 30 for partial matching
+# ============================================================
+# Terminal color support
+# ============================================================
 
-    # Walk through the directory
-    for root, dirs, files in os.walk(directory):
-        for file_name in files:
-            file_path = os.path.join(root, file_name)
+def supports_color():
+    return sys.stdout.isatty()
 
-            # Skip Excel files here and handle them separately
-            if file_name.endswith('.xlsx'):
-                try:
-                    workbook = openpyxl.load_workbook(file_path, read_only=True)
-                    for sheet in workbook.worksheets:
-                        for row in sheet.iter_rows():
-                            for cell in row:
-                                cell_value = cell.value
-                                for term in search_terms:
-                                    handle_search(term, str(cell_value), file_path, files_found, threshold)
-                except openpyxl.utils.exceptions.InvalidFileException:
-                    pass  # Skip invalid Excel files
-                continue  # Skip the file if it's an Excel file
+class Colors:
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    CYAN = "\033[96m"
+    RESET = "\033[0m"
 
-            # Process other file types like .txt, .log, etc.
-            if file_name.endswith(tuple(extensions)):
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-                    for line in file:
-                        for term in search_terms:
-                            handle_search(term, line, file_path, files_found, threshold)
+# ============================================================
+# Regex helpers
+# ============================================================
 
-            # Handle .docx files
-            elif file_name.endswith('.docx'):
-                try:
-                    document = Document(file_path)
-                    for paragraph in document.paragraphs:
-                        for term in search_terms:
-                            handle_search(term, paragraph.text, file_path, files_found, threshold)
-                except Exception as e:
-                    pass  # Skip any errors related to .docx files
+IP_REGEX = re.compile(r"\b(?:\d{1,3}\.){1,3}\d{1,3}\b")
 
-            # Handle .ini files (ConfigParser)
-            elif file_name.endswith('.ini'):
-                try:
-                    config = ConfigParser()
-                    config.read(file_path)
-                    for section in config.sections():
-                        for option, value in config.items(section):
-                            for term in search_terms:
-                                handle_search(term, option, file_path, files_found, threshold)
-                                handle_search(term, value, file_path, files_found, threshold)
-                except Exception as e:
-                    pass  # Skip any errors related to .ini files
+# ============================================================
+# Input normalization helpers
+# ============================================================
 
-            # Handle .json files
-            elif file_name.endswith('.json'):
-                try:
-                    with open(file_path, 'r') as json_file:
-                        json_data = json.load(json_file)
-                        json_content = json.dumps(json_data)
-                        for term in search_terms:
-                            handle_search(term, json_content, file_path, files_found, threshold)
-                except Exception as e:
-                    pass  # Skip any errors related to .json files
+def clean_arg(val: str) -> str:
+    return val.strip().strip('"').strip("'")
 
-            # Handle .xml files
-            elif file_name.endswith('.xml'):
-                try:
-                    tree = ET.parse(file_path)
-                    root = tree.getroot()
-                    xml_content = ET.tostring(root, encoding='unicode', method='xml')
-                    for term in search_terms:
-                        handle_search(term, xml_content, file_path, files_found, threshold)
-                except Exception as e:
-                    pass  # Skip any errors related to .xml files
+def split_and_clean(val: str):
+    return [clean_arg(v) for v in val.split(",") if clean_arg(v)]
 
-    return files_found
+# ============================================================
+# Core search engine
+# ============================================================
 
-# Helper function to search terms in content and store results
-def handle_search(term, content, file_path, files_found, threshold):
-    if term.startswith('IP-') or term.startswith('MAC-'):
-        handle_ip_mac_search(term, content, file_path, files_found)
-    elif fuzz.partial_ratio(term.lower(), content.lower()) >= threshold:
-        if file_path.endswith('.json'):
-            files_found[term]["json"].add(file_path)
-        elif file_path.endswith('.xml'):
-            files_found[term]["xml"].add(file_path)
+def search_files(directory, search_terms, use_prefix, threshold=75):
+    results = {term: {"text": set(), "json": set(), "xml": set()} for term in search_terms}
+    text_exts = ('.txt', '.log', '.csv')
+
+    for root, _, files in os.walk(directory):
+        for name in files:
+            path = os.path.join(root, name)
+
+            try:
+                if name.endswith('.xlsx'):
+                    process_excel(path, search_terms, results, use_prefix, threshold)
+                elif name.endswith('.docx'):
+                    process_docx(path, search_terms, results, use_prefix, threshold)
+                elif name.endswith('.ini'):
+                    process_ini(path, search_terms, results, use_prefix, threshold)
+                elif name.endswith('.json'):
+                    process_json(path, search_terms, results, use_prefix, threshold)
+                elif name.endswith('.xml'):
+                    process_xml(path, search_terms, results, use_prefix, threshold)
+                elif name.endswith(text_exts):
+                    process_text(path, search_terms, results, use_prefix, threshold)
+            except Exception:
+                continue
+
+    return results
+
+# ============================================================
+# File processors
+# ============================================================
+
+def process_text(path, terms, results, use_prefix, threshold):
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            scan_content(line, path, terms, results, use_prefix, threshold)
+
+def process_excel(path, terms, results, use_prefix, threshold):
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    for ws in wb.worksheets:
+        for row in ws.iter_rows(values_only=True):
+            for cell in row:
+                if cell:
+                    scan_content(str(cell), path, terms, results, use_prefix, threshold)
+
+def process_docx(path, terms, results, use_prefix, threshold):
+    doc = Document(path)
+    for p in doc.paragraphs:
+        scan_content(p.text, path, terms, results, use_prefix, threshold)
+
+def process_ini(path, terms, results, use_prefix, threshold):
+    cfg = ConfigParser()
+    cfg.read(path)
+    for s in cfg.sections():
+        for k, v in cfg.items(s):
+            scan_content(k, path, terms, results, use_prefix, threshold)
+            scan_content(v, path, terms, results, use_prefix, threshold)
+
+def process_json(path, terms, results, use_prefix, threshold):
+    with open(path, encoding="utf-8", errors="ignore") as f:
+        scan_content(json.dumps(json.load(f)), path, terms, results, use_prefix, threshold, "json")
+
+def process_xml(path, terms, results, use_prefix, threshold):
+    tree = ET.parse(path)
+    scan_content(
+        ET.tostring(tree.getroot(), encoding="unicode"),
+        path, terms, results, use_prefix, threshold, "xml"
+    )
+
+# ============================================================
+# Matching logic
+# ============================================================
+
+def scan_content(content, path, terms, results, use_prefix, threshold, filetype="text"):
+    content_l = content.lower()
+
+    for term in terms:
+        if term.startswith("IP-"):
+            val = term[3:]
+            if (
+                match_ip_or_cidr(val, content) or
+                (use_prefix and match_ip_prefix(val, content))
+            ):
+                results[term][filetype].add(path)
+
+        elif term.startswith("MAC-"):
+            val = term[4:]
+            if (
+                match_mac(val, content) or
+                (use_prefix and match_mac_prefix(val, content))
+            ):
+                results[term][filetype].add(path)
+
         else:
-            files_found[term]["text"].add(file_path)
+            t = term.lower()
+            if t in content_l or fuzz.partial_ratio(t, content_l) >= threshold:
+                results[term][filetype].add(path)
 
-# Handle searches for IP and MAC addresses
-def handle_ip_mac_search(term, content, file_path, files_found):
-    if term.startswith('IP-'):
-        ip_term = term[3:]
-        if is_ip_match(ip_term, content):
-            files_found[term]["text"].add(file_path)
-    elif term.startswith('MAC-'):
-        mac_term = term[4:]
-        if is_mac_match(mac_term, content):
-            files_found[term]["text"].add(file_path)
+# ---------------- IP FUNCTIONS ----------------
 
-# Check if the IP matches
-def is_ip_match(term, content):
+def match_ip_or_cidr(search_term, content):
     try:
-        ip_address_obj = ipaddress.ip_address(content.strip())
-        if isinstance(ip_address_obj, ipaddress.IPv4Address) and isinstance(ipaddress.ip_address(term.strip()), ipaddress.IPv4Address):
-            return str(ip_address_obj).startswith(str(term.strip()))
+        if "/" in search_term:
+            net = ipaddress.ip_network(search_term, strict=False)
+            is_cidr = True
+        else:
+            ip = ipaddress.ip_address(search_term)
+            is_cidr = False
     except ValueError:
         return False
 
-# Check if the MAC address matches
-def is_mac_match(term, content):
-    sanitized_content = ''.join(c.lower() for c in content if c.isalnum())
-    sanitized_term = ''.join(c.lower() for c in term if c.isalnum())
-    return sanitized_content.startswith(sanitized_term)
+    for cand in IP_REGEX.findall(content):
+        try:
+            found = ipaddress.ip_address(cand)
+            if is_cidr and found in net:
+                return True
+            if not is_cidr and found == ip:
+                return True
+        except ValueError:
+            continue
 
-# Main function to parse arguments and execute search
+    return False
+
+def match_ip_prefix(prefix, content):
+    return any(cand.startswith(prefix) for cand in IP_REGEX.findall(content))
+
+# ---------------- MAC FUNCTIONS ----------------
+
+def match_mac(term, content):
+    t = re.sub(r"[^0-9A-Fa-f]", "", term).lower()
+    c = re.sub(r"[^0-9A-Fa-f]", "", content).lower()
+    return t in c
+
+def match_mac_prefix(prefix, content):
+    p = re.sub(r"[^0-9A-Fa-f]", "", prefix).lower()
+    c = re.sub(r"[^0-9A-Fa-f]", "", content).lower()
+    return c.startswith(p)
+
+# ============================================================
+# Main CLI
+# ============================================================
+
 def main():
-    parser = argparse.ArgumentParser(description="Search for keyword(s), IP addresses, MAC addresses, and sections/values in .txt, .log, .csv, .xlsx, .docx, .ini, .json, and .xml files.")
-    parser.add_argument("-D", "--directory", dest="directory", help="Directory to search for files. Enclose in double quotes if it contains spaces.")
-    parser.add_argument("-K", "--keywords", dest="keywords", help="Keywords separated by commas.")
-    parser.add_argument("-I", "--ip", dest="ip_addresses", help="IP addresses separated by commas. Enclose in double quotes.")
-    parser.add_argument("-M", "--mac", dest="mac_addresses", help="MAC addresses separated by commas. Enclose in double quotes.")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        description=(
+            "Multi‑File Search Utility (DFIR‑Ready)\n\n"
+            "DEFAULT MODE (Safe):\n"
+            "  • IP exact + CIDR matching\n"
+            "  • Full MAC matching\n\n"
+            "PREFIX MODE (Opt‑In):\n"
+            "  • Enables partial prefix matching for IP/MAC\n"
+            "  • Use with care during IR investigations\n\n"
+            "Examples:\n"
+            "  -I 192.168.1.0/24\n"
+            "  -P -I 192.168.1.\n"
+            "  -P -M 00:11:22\n"
+        )
+    )
+
+    parser.add_argument("-D", "--directory", required=True)
+    parser.add_argument("-K", "--keywords")
+    parser.add_argument("-I", "--ip", dest="ip_addresses")
+    parser.add_argument("-M", "--mac", dest="mac_addresses")
+    parser.add_argument(
+        "-P", "--prefix",
+        action="store_true",
+        help="Enable prefix matching for IP and MAC addresses."
+    )
+    parser.add_argument("--case", dest="case_id")
+    parser.add_argument("--quiet", action="store_true")
 
     args = parser.parse_args()
 
-    directory = os.path.abspath(args.directory) if args.directory else None
-    extensions = ['log', 'txt', 'xlsx', 'csv', 'docx', 'ini', 'json', 'xml']
-    keywords = [keyword.strip() for keyword in args.keywords.split(',')] if args.keywords else []
-    ip_addresses = [ip.strip() for ip in args.ip_addresses.split(',')] if args.ip_addresses else []
-    mac_addresses = [mac.strip() for mac in args.mac_addresses.split(',')] if args.mac_addresses else []
+    keywords = split_and_clean(args.keywords) if args.keywords else []
+    ips = split_and_clean(args.ip_addresses) if args.ip_addresses else []
+    macs = split_and_clean(args.mac_addresses) if args.mac_addresses else []
 
-    search_terms = keywords + [f"IP-{ip}" for ip in ip_addresses] + [f"MAC-{mac}" for mac in mac_addresses]
+    search_terms = (
+        keywords +
+        [f"IP-{i}" for i in ips] +
+        [f"MAC-{m}" for m in macs]
+    )
 
-    files_found = search_files(directory, extensions, search_terms)
+    if not search_terms:
+        parser.error("No search terms supplied.")
 
-    # Print results
-    for term, file_types in files_found.items():
-        unique_text_files = set(file_types["text"])
-        unique_json_files = set(file_types["json"])
-        unique_xml_files = set(file_types["xml"])
+    results = search_files(
+        os.path.abspath(args.directory),
+        search_terms,
+        args.prefix
+    )
 
-        if len(unique_text_files) > 0:
-            print(f"Found {len(unique_text_files)} text file(s) containing the keyword '{term}':")
-            for file_path in unique_text_files:
-                print(file_path)
-        if len(unique_json_files) > 0:
-            print(f"Found {len(unique_json_files)} JSON file(s) containing the keyword '{term}':")
-            for file_path in unique_json_files:
-                print(file_path)
-        if len(unique_xml_files) > 0:
-            print(f"Found {len(unique_xml_files)} XML file(s) containing the keyword '{term}':")
-            for file_path in unique_xml_files:
-                print(file_path)
-        if len(unique_text_files) == 0 and len(unique_json_files) == 0 and len(unique_xml_files) == 0:
-            print(f"No files containing the keyword '{term}' were found.")
+    color = supports_color() and not args.quiet
+    def c(t, col): return f"{col}{t}{Colors.RESET}" if color else t
+
+    for term, buckets in results.items():
+        hit = False
+        for ft, paths in buckets.items():
+            for p in paths:
+                hit = True
+                print(p if args.quiet else c("[FOUND]", Colors.GREEN), term, "->", p)
+        if not hit and not args.quiet:
+            print(c("[NONE ]", Colors.YELLOW), term)
 
 if __name__ == "__main__":
     main()
