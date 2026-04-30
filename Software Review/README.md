@@ -32,9 +32,10 @@ See the requirements.txt file for modules and module versions.
 
 ## Release History
 
-*0.0.2
-    * Added questions covering general information
-    * Fixed issue with PDF file not wrapping large amounts of text.
+* 0.0.2
+    * Added a few new General Info questions.
+    * Fixed issue with PDf report not wrapping text for large amounts of entered text.
+
 * 0.0.1
     * Initial Release.
 
