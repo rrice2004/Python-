@@ -32,6 +32,9 @@ See the requirements.txt file for modules and module versions.
 
 ## Release History
 
+* 0.0.3
+    * Added a new notes section
+      
 * 0.0.2
     * Added a few new General Info questions.
     * Fixed issue with PDf report not wrapping text for large amounts of entered text.
