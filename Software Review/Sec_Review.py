@@ -75,6 +75,7 @@ QUESTIONS = [
     ("approval", "Approval status (Approved, Conditional, Denied):"),
     ("approver", "Approver name:"),
     ("approval_date", "Approval date:"),
+    ("review_notes", "Review Notes:"),
 ]
 
 # ------------------- HELPER FUNCTIONS -------------------
@@ -265,7 +266,7 @@ def generate_pdf():
 
     section("Risk & Approval",
         ["risk_level", "key_risks", "mitigations",
-         "approval", "approver", "approval_date"])
+         "approval", "approver", "approval_date", "review_notes"])
 
     pdf.build(story)
     print(f"PDF exported as {filename}")
@@ -278,8 +279,8 @@ def generate_blank_word_report():
 
     sections = {
         "General Information": [
-            "software_name", "software_vendor", "vendor_url", "ticket_number",
-            "version", "use_case", "overview"
+            "software_name", "software_vendor", "vendor_url", "ticket_number","submitted_by",
+            "date_submitted","review_version", "use_case", "overview"
         ],
         "Policies & Data Handling": [
             "privacy_policy", "privacy_notes", "tos_reviewed", "tos_notes",
@@ -298,7 +299,7 @@ def generate_blank_word_report():
         ],
         "Risk & Approval": [
             "risk_level", "key_risks", "mitigations",
-            "approval", "approver", "approval_date"
+            "approval", "approver", "approval_date", "review_notes"
         ]
     }
 
